@@ -1,0 +1,14 @@
+# compiled binaries
+cpp_solution/mdrender
+cpp_solution/mdrender_prof
+cpp_solution/mdrender_bench
+*.o
+*.out
+
+# python cache
+__pycache__/
+*.pyc
+
+# local-only archives and artifacts (not part of the public project)
+*.zip
+final_submission/
