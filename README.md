@@ -112,7 +112,7 @@ contains those constructs; the gaps surface immediately on broader inputs.
 
 ### Speed
 
-| | Python | Cursor C++ | Claude Code C++ |
+| | Python | Cursor C++ (Claude Model) | Claude Code C++ |
 |---|---|---|---|
 | End-to-end (best-of-N) | ~155 ms | ~10 ms | ~10.7 ms |
 | Speedup vs Python | 1× | ~16× | ~14.5× |
@@ -140,3 +140,17 @@ and combinations of the above.
 
 **Out of scope:** tables, strikethrough, linkify, typographer, images, reference-style
 links, complex nested lists, raw HTML, plugins.
+
+---
+
+## Conclusion
+
+This project had two goals: produce a byte-exact C++17 port of the Python Markdown renderer, and use that port as a testbed to compare two LLM-assisted workflows, Cursor and Claude Code, on correctness and speed.
+
+**Porting outcome.** The C++ port achieves byte-for-byte identical output against the Python reference across all visible tests, the 256 KB benchmark document, and hand-written edge cases. The dominant performance gain (~16x) comes from the language port itself — interpreter overhead eliminated — while targeted micro-optimizations (single output buffer, vector reserves, std::move on pending text) contribute an additional ~11%, bringing core render time from 6.79 ms to 6.05 ms.
+
+**LLM workflow comparison.** Both Cursor and Claude Code produced ports that pass the visible tests and the benchmark at comparable speed (~14–16x vs Python, within measurement noise). The meaningful difference is correctness breadth: Cursor's port (Claude model, single-session) achieves zero diff across 10,000+ differentially fuzzed documents, while the Claude Code port, produced via a staged multi-agent workflow, has two missing in-domain features (indented code blocks, thematic breaks) that cause ~81% mismatch on broader fuzz. These gaps do not appear in the visible tests or benchmark, which is precisely why differential fuzzing against the reference is necessary; visible-test pass rate is not a reliable correctness signal.
+
+**When each workflow fits.** For a self-contained renderer of this scale (~1,500 lines of generated C++), a single-session Cursor run is faster to execute and produced higher correctness coverage in this comparison. The staged Claude Code approach, modular gating, per-module regression checks, explicit porting plan, adds overhead that pays off at larger scale: for codebases of 5,000+ lines where context limits and integration risk dominate, the structured multi-agent workflow is the safer choice. The correctness gap observed here is not inherent to Claude Code; it reflects scope decisions made during the staged port, not a capability ceiling.
+
+**Key lesson.** Passing the provided test suite is a necessary but insufficient correctness bar. The only reliable signal is exhaustive differential testing against the reference across the full intended input domain, applied continuously, not just at the end.
